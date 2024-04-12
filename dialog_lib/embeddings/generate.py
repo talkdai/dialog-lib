@@ -2,7 +2,7 @@ from typing import List
 
 from sqlalchemy import select
 from langchain_core.embeddings import Embeddings
-from dialog.db.models import CompanyContent
+from dialog_lib.db.models import CompanyContent
 
 
 def generate_embeddings(documents: List[str], embedding_llm_instance : Embeddings = None):
