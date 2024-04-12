@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "dialog"
+name = "dialog-lib"
 version = "0.0.1"
 description = ""
 authors = ["Talkd.AI <foss@talkd.ai>"]
