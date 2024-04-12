@@ -1,6 +1,6 @@
 import uuid
 
-from dialog.db.models import Chat
+from .models import Chat
 
 
 def create_session(identifier=None, dbsession=None):

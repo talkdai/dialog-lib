@@ -1,8 +1,7 @@
 from langchain.memory import PostgresChatMessageHistory
 from langchain.schema.messages import BaseMessage, _message_to_dict
 
-from dialog.db.models import Chat, ChatMessages
-from dialog.settings import Settings
+from .models import Chat, ChatMessages
 
 
 class CustomPostgresChatMessageHistory(PostgresChatMessageHistory):
@@ -47,13 +46,13 @@ class CustomPostgresChatMessageHistory(PostgresChatMessageHistory):
         self.dbsession.commit()
 
 
-def generate_memory_instance(session_id, parent_session_id=None, dbsession=None):
+def generate_memory_instance(session_id, parent_session_id=None, dbsession=None, database_url=None):
     """
     Generate a memory instance for a given session_id
     """
 
     return CustomPostgresChatMessageHistory(
-        connection_string=Settings().DATABASE_URL,
+        connection_string=database_url,
         session_id=session_id,
         parent_session_id=parent_session_id,
         table_name="chat_messages",
