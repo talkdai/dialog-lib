@@ -28,9 +28,10 @@ def get_most_relevant_contents_from_message(
         top=5,
         dataset=None,
         session=None,
+        embeddings_llm=None,
         cosine_similarity_threshold=0.5
     ):
-    message_embedding = generate_embedding(message)
+    message_embedding = generate_embedding(message, embeddings_llm)
     filters = [
         CompanyContent.embedding.cosine_distance(message_embedding) < cosine_similarity_threshold,
     ]
