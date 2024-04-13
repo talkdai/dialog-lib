@@ -3,7 +3,7 @@ import uuid
 from .models import Chat
 
 
-def create_session(identifier=None, dbsession=None):
+def create_chat_session(identifier=None, dbsession=None):
     if identifier is None:
         identifier = uuid.uuid4().hex
 
