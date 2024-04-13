@@ -28,7 +28,7 @@ def get_most_relevant_contents_from_message(
         top=5,
         dataset=None,
         session=None,
-        cosine_similarity_threshold=0.5,
+        cosine_similarity_threshold=0.5
     ):
     message_embedding = generate_embedding(message)
     filters = [
