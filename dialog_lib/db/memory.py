@@ -60,21 +60,21 @@ def generate_memory_instance(session_id, parent_session_id=None, dbsession=None,
     )
 
 
-def add_user_message_to_message_history(session_id, message, memory=None, dbsession=None):
+def add_user_message_to_message_history(session_id, message, memory=None, dbsession=None, database_url=None):
     """
     Add a user message to the message history and returns the updated
     memory instance
     """
     if not memory:
-        memory = generate_memory_instance(session_id)
+        memory = generate_memory_instance(session_id, dbsession=dbsession, database_url=database_url)
 
     memory.add_user_message(message)
     return memory
 
 
-def get_messages(session_id, dbsession=None):
+def get_messages(session_id, dbsession=None, database_url=None):
     """
     Get all messages for a given session_id
     """
-    memory = generate_memory_instance(session_id, dbsession=dbsession)
+    memory = generate_memory_instance(session_id, dbsession=dbsession, database_url=database_url)
     return memory.messages
