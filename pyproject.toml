@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dialog-lib"
-version = "0.0.1.6"
+version = "0.0.1.7"
 description = ""
 authors = ["Talkd.AI <foss@talkd.ai>"]
 license = "MIT"
