@@ -14,11 +14,13 @@ class CustomPostgresChatMessageHistory(PostgresChatMessageHistory):
         *args,
         parent_session_id=None,
         dbsession=None,
+        chats_model=Chat,
         chat_messages_model=ChatMessages,
         **kwargs,
     ):
         self.parent_session_id = parent_session_id
         self.dbsession = dbsession
+        self.chats_model = chats_model
         self.chat_messages_model = chat_messages_model
         super().__init__(*args, **kwargs)
 
@@ -38,14 +40,14 @@ class CustomPostgresChatMessageHistory(PostgresChatMessageHistory):
 
     def add_tags(self, tags: str) -> None:
         """Add tags for a given session_id/uuid on chats table"""
-        self.dbsession.query(Chat).where(Chat.session_id == self.session_id).update(
-            {Chat.tags: tags}
-        )
+        self.dbsession.query(self.chats_model).where(
+            self.chats_model.session_id == self.session_id
+        ).update({getattr(self.chats_model, "tags"): tags})
         self.dbsession.commit()
 
     def add_message(self, message: BaseMessage) -> None:
         """Append the message to the record in PostgreSQL"""
-        message = ChatMessages(
+        message = self.chat_messages_model(
             session_id=self.session_id, message=_message_to_dict(message)
         )
         if self.parent_session_id:
@@ -55,7 +57,12 @@ class CustomPostgresChatMessageHistory(PostgresChatMessageHistory):
 
 
 def generate_memory_instance(
-    session_id, parent_session_id=None, dbsession=None, database_url=None
+    session_id,
+    parent_session_id=None,
+    dbsession=None,
+    database_url=None,
+    chats_model=Chat,
+    chat_messages_model=ChatMessages,
 ):
     """
     Generate a memory instance for a given session_id
@@ -67,6 +74,8 @@ def generate_memory_instance(
         parent_session_id=parent_session_id,
         table_name="chat_messages",
         dbsession=dbsession,
+        chats_model=chats_model,
+        chat_messages_model=chat_messages_model,
     )
 
 
