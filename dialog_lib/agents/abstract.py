@@ -105,3 +105,10 @@ class AbstractLLM:
         )
         processed_output = self.postprocess(output)
         return processed_output
+
+    @property
+    def messages(self):
+        """
+        Returns the messages from the memory instance
+        """
+        return self.memory.messages
