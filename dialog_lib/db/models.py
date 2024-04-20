@@ -1,9 +1,7 @@
 import uuid
 
 from sqlalchemy import Table, MetaData
-from sqlalchemy import (
-    Column, Integer, DateTime, String, text, Text
-)
+from sqlalchemy import Column, Integer, DateTime, String, text, Text
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 
@@ -21,14 +19,19 @@ class ChatMessages(Base):
     parent = Column(Integer, nullable=True)
     session_id = Column(String, nullable=False)
     message = Column(JSONB, nullable=False)
-    timestamp = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"))
+    timestamp = Column(
+        DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
+    )
 
 
 class Chat(Base):
     __tablename__ = "chats"
 
-    session_id = Column(String, nullable=False, default=str(uuid.uuid4()), primary_key=True)
+    session_id = Column(
+        String, nullable=False, default=str(uuid.uuid4()), primary_key=True
+    )
     tags = Column(String, nullable=True)
+
 
 class CompanyContent(Base):
     __tablename__ = "contents"
@@ -41,5 +44,3 @@ class CompanyContent(Base):
     embedding = Column(Vector(1536), nullable=False)
     dataset = Column(String, nullable=True)
     link = Column(String, nullable=True)
-
-

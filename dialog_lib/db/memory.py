@@ -9,9 +9,17 @@ class CustomPostgresChatMessageHistory(PostgresChatMessageHistory):
     Custom chat message history for LLM
     """
 
-    def __init__(self, *args, parent_session_id=None, dbsession=None, **kwargs):
+    def __init__(
+        self,
+        *args,
+        parent_session_id=None,
+        dbsession=None,
+        chat_messages_model=ChatMessages,
+        **kwargs,
+    ):
         self.parent_session_id = parent_session_id
         self.dbsession = dbsession
+        self.chat_messages_model = chat_messages_model
         super().__init__(*args, **kwargs)
 
     def _create_table_if_not_exists(self) -> None:
@@ -46,7 +54,9 @@ class CustomPostgresChatMessageHistory(PostgresChatMessageHistory):
         self.dbsession.commit()
 
 
-def generate_memory_instance(session_id, parent_session_id=None, dbsession=None, database_url=None):
+def generate_memory_instance(
+    session_id, parent_session_id=None, dbsession=None, database_url=None
+):
     """
     Generate a memory instance for a given session_id
     """
@@ -56,17 +66,21 @@ def generate_memory_instance(session_id, parent_session_id=None, dbsession=None,
         session_id=session_id,
         parent_session_id=parent_session_id,
         table_name="chat_messages",
-        dbsession=dbsession
+        dbsession=dbsession,
     )
 
 
-def add_user_message_to_message_history(session_id, message, memory=None, dbsession=None, database_url=None):
+def add_user_message_to_message_history(
+    session_id, message, memory=None, dbsession=None, database_url=None
+):
     """
     Add a user message to the message history and returns the updated
     memory instance
     """
     if not memory:
-        memory = generate_memory_instance(session_id, dbsession=dbsession, database_url=database_url)
+        memory = generate_memory_instance(
+            session_id, dbsession=dbsession, database_url=database_url
+        )
 
     memory.add_user_message(message)
     return memory
@@ -76,5 +90,7 @@ def get_messages(session_id, dbsession=None, database_url=None):
     """
     Get all messages for a given session_id
     """
-    memory = generate_memory_instance(session_id, dbsession=dbsession, database_url=database_url)
+    memory = generate_memory_instance(
+        session_id, dbsession=dbsession, database_url=database_url
+    )
     return memory.messages

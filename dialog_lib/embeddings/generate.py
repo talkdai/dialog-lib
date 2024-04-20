@@ -5,7 +5,9 @@ from langchain_core.embeddings import Embeddings
 from dialog_lib.db.models import CompanyContent
 
 
-def generate_embeddings(documents: List[str], embedding_llm_instance : Embeddings = None):
+def generate_embeddings(
+    documents: List[str], embedding_llm_instance: Embeddings = None
+):
     """
     Generate embeddings for a list of documents
     """
@@ -24,25 +26,28 @@ def generate_embedding(document: str, embedding_llm_instance: Embeddings = None)
 
 
 def get_most_relevant_contents_from_message(
-        message,
-        top=5,
-        dataset=None,
-        session=None,
-        embeddings_llm=None,
-        cosine_similarity_threshold=0.5
-    ):
+    message,
+    top=5,
+    dataset=None,
+    session=None,
+    embeddings_llm=None,
+    cosine_similarity_threshold=0.5,
+    model=CompanyContent,
+    embedding_column="embedding",
+):
     message_embedding = generate_embedding(message, embeddings_llm)
     filters = [
-        CompanyContent.embedding.cosine_distance(message_embedding) < cosine_similarity_threshold,
+        model.embedding.cosine_distance(message_embedding)
+        < cosine_similarity_threshold,
     ]
 
     if dataset is not None:
-        filters.append(CompanyContent.dataset == dataset)
+        filters.append(model.dataset == dataset)
 
     possible_contents = session.scalars(
-        select(CompanyContent)
+        select(model)
         .filter(*filters)
-        .order_by(CompanyContent.embedding.cosine_distance(message_embedding))
+        .order_by(getattr(model, embedding_column).cosine_distance(message_embedding))
         .limit(top)
     ).all()
     return possible_contents
