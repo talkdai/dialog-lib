@@ -9,7 +9,7 @@ The main purpose of this project is removing the main difficulties
 
 This is a standalone project, you can use it as a wrapper for LLM instances, right now we have the following LLMs integrated:
 
-- [ ] OpenAIs GPT Models (both 3.5 and 4) - available in the server's original repo, being migrated to this one
+- [X] OpenAIs GPT Models (both 3.5 and 4) - available in the server's original repo, being migrated to this one
 - [ ] Azure OpenAI
 - [ ] Mistral
 - [ ] Bedrock
