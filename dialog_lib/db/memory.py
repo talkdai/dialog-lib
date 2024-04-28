@@ -1,4 +1,6 @@
-from langchain.memory import PostgresChatMessageHistory
+import psycopg
+
+from langchain_postgres import PostgresChatMessageHistory
 from langchain.schema.messages import BaseMessage, _message_to_dict
 
 from .models import Chat, ChatMessages
@@ -16,15 +18,21 @@ class CustomPostgresChatMessageHistory(PostgresChatMessageHistory):
         dbsession=None,
         chats_model=Chat,
         chat_messages_model=ChatMessages,
+        ssl_mode=None,
         **kwargs,
     ):
         self.parent_session_id = parent_session_id
         self.dbsession = dbsession
         self.chats_model = chats_model
         self.chat_messages_model = chat_messages_model
-        super().__init__(*args, **kwargs)
+        self._connection = psycopg.connect(
+            kwargs.pop("connection_string"), sslmode=ssl_mode
+        )
+        self._session_id = kwargs.pop("session_id")
+        self._table_name = kwargs.pop("table_name")
 
-    def _create_table_if_not_exists(self) -> None:
+
+    def create_tables(self) -> None:
         """
         create table if it does not exist
         add a new column for timestamp
@@ -41,14 +49,14 @@ class CustomPostgresChatMessageHistory(PostgresChatMessageHistory):
     def add_tags(self, tags: str) -> None:
         """Add tags for a given session_id/uuid on chats table"""
         self.dbsession.query(self.chats_model).where(
-            self.chats_model.session_id == self.session_id
+            self.chats_model.session_id == self._session_id
         ).update({getattr(self.chats_model, "tags"): tags})
         self.dbsession.commit()
 
     def add_message(self, message: BaseMessage) -> None:
         """Append the message to the record in PostgreSQL"""
         message = self.chat_messages_model(
-            session_id=self.session_id, message=_message_to_dict(message)
+            session_id=self._session_id, message=_message_to_dict(message)
         )
         if self.parent_session_id:
             message.parent = self.parent_session_id
