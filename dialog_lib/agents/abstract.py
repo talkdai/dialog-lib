@@ -1,6 +1,6 @@
+from langchain.prompts import ChatPromptTemplate
 from langchain.chains.llm import LLMChain
 from langchain.memory.chat_memory import BaseChatMemory
-from langchain.prompts import ChatPromptTemplate
 
 
 class AbstractLLM:
@@ -36,12 +36,6 @@ class AbstractLLM:
         self.llm_api_key = self.config.get("llm_api_key", llm_api_key)
         self.parent_session_id = parent_session_id
         self.dbsession = dbsession
-
-    def get_prompt(self, input) -> ChatPromptTemplate:
-        """
-        Function that generates the prompt for the LLM.
-        """
-        raise NotImplementedError("Prompt must be implemented")
 
     @property
     def memory(self) -> BaseChatMemory:
@@ -90,15 +84,7 @@ class AbstractLLM:
         """
         processed_input = self.preprocess(input)
         self.generate_prompt(processed_input)
-        if len(self.relevant_contents) == 0 and self.config.get("prompt").get(
-            "fallback_not_found_relevant_contents"
-        ):
-            return {
-                "text": self.config.get("prompt").get(
-                    "fallback_not_found_relevant_contents"
-                )
-            }
-        output = self.llm(
+        output = self.llm.invoke(
             {
                 "user_message": processed_input,
             }
@@ -112,3 +98,30 @@ class AbstractLLM:
         Returns the messages from the memory instance
         """
         return self.memory.messages
+
+
+class AbstractRAG(AbstractLLM):
+    relevant_contents = []
+
+    def process(self, input: str):
+        """
+        Function that encapsulates the pre-processing, processing and post-processing
+        of the LLM.
+        """
+        processed_input = self.preprocess(input)
+        self.generate_prompt(processed_input)
+        if len(self.relevant_contents) == 0 and self.config.get("prompt").get(
+            "fallback_not_found_relevant_contents"
+        ):
+            return {
+                "text": self.config.get("prompt").get(
+                    "fallback_not_found_relevant_contents"
+                )
+            }
+        output = self.llm.invoke(
+            {
+                "user_message": processed_input,
+            }
+        )
+        processed_output = self.postprocess(output)
+        return processed_output

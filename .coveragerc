@@ -1,0 +1,6 @@
+[run]
+source=.
+omit=dialog_lib/tests/*,dialog_lib/samples/*
+
+[report]
+omit=dialog_lib/tests/*,dialog_lib/samples/*

@@ -28,8 +28,6 @@ def test_abstract_agent_get_prompt():
         "temperature": 0.5,
     }
     agent = AbstractLLM(config=config)
-    with pytest.raises(NotImplementedError):
-        agent.get_prompt(input="Hello")
 
 def test_abstract_agent_memory():
     config = {
@@ -61,7 +59,7 @@ def test_abstract_agent_generate_prompt():
     prompt = agent.generate_prompt(text="Hello")
     assert prompt == "Hello"
 
-def test_abstract_agent_process():
+def test_abstract_agent_process(mocker):
     config = {
         "model": "gpt3.5-turbo",
         "temperature": 0.5,
@@ -70,6 +68,9 @@ def test_abstract_agent_process():
         }
     }
     agent = AbstractLLM(config=config)
+
     agent.relevant_contents = [] # sample mock
+    mocker.patch('dialog_lib.agents.abstract.AbstractLLM.llm')
+    mocker.patch('dialog_lib.agents.abstract.AbstractLLM.llm.invoke', return_value={'text': '404 Not Found'})
     output = agent.process(input="Hello")
     assert output == {'text': '404 Not Found'}
