@@ -6,8 +6,6 @@ Here we will explain more about the abstract llm class.
 
 ## Available Methods
 
-### get_prompt(self, input)
-
 ### memory(self)
 
 ### llm(self)

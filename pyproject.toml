@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dialog-lib"
-version = "0.0.1.11"
+version = "0.0.1.12"
 description = ""
 authors = ["Talkd.AI <foss@talkd.ai>"]
 license = "MIT"
@@ -14,6 +14,7 @@ click = "^8.1.7"
 pgvector = "^0.2.5"
 langchain-openai = "^0.0.6"
 psycopg2-binary = "^2.9.9"
+langchain-postgres = "^0.0.3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.1.1"
@@ -26,7 +27,7 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [project.scripts]
-dialog = "dialog.main:main"
+dialog = "dialog_lib.main:main"
 
 [tool.poetry.scripts]
-dialog = "dialog.main:main"
+dialog = "dialog_lib.main:main"
