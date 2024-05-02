@@ -16,6 +16,7 @@ langchain-openai = "^0.0.6"
 psycopg2-binary = "^2.9.9"
 langchain-postgres = "^0.0.3"
 langchain-community = "^0.0.36"
+langchain-anthropic = "^0.1.11"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.1.1"
@@ -28,7 +29,7 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [project.scripts]
-dialog = "dialog_lib.main:main"
+dialog = "dialog_lib.manage:main"
 
 [tool.poetry.scripts]
-dialog = "dialog_lib.main:main"
+dialog = "dialog_lib.manage:main"
