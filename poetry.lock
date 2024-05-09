@@ -96,6 +96,20 @@ yarl = ">=1.0,<2.0"
 speedups = ["Brotli", "aiodns", "brotlicffi"]
 
 [[package]]
+name = "aioresponses"
+version = "0.7.6"
+description = "Mock out requests made by ClientSession from aiohttp package"
+optional = false
+python-versions = "*"
+files = [
+    {file = "aioresponses-0.7.6-py2.py3-none-any.whl", hash = "sha256:d2c26defbb9b440ea2685ec132e90700907fd10bcca3e85ec2f157219f0d26f7"},
+    {file = "aioresponses-0.7.6.tar.gz", hash = "sha256:f795d9dbda2d61774840e7e32f5366f45752d1adc1b74c9362afd017296c7ee1"},
+]
+
+[package.dependencies]
+aiohttp = ">=3.3.0,<4.0.0"
+
+[[package]]
 name = "aiosignal"
 version = "1.3.1"
 description = "aiosignal: a list of registered asynchronous callbacks"
@@ -184,6 +198,27 @@ tests-mypy = ["mypy (>=1.6)", "pytest-mypy-plugins"]
 tests-no-zope = ["attrs[tests-mypy]", "cloudpickle", "hypothesis", "pympler", "pytest (>=4.3.0)", "pytest-xdist[psutil]"]
 
 [[package]]
+name = "beautifulsoup4"
+version = "4.12.3"
+description = "Screen-scraping library"
+optional = false
+python-versions = ">=3.6.0"
+files = [
+    {file = "beautifulsoup4-4.12.3-py3-none-any.whl", hash = "sha256:b80878c9f40111313e55da8ba20bdba06d8fa3969fc68304167741bbf9e082ed"},
+    {file = "beautifulsoup4-4.12.3.tar.gz", hash = "sha256:74e3d1928edc070d21748185c46e3fb33490f22f52a3addee9aee0f4f7781051"},
+]
+
+[package.dependencies]
+soupsieve = ">1.2"
+
+[package.extras]
+cchardet = ["cchardet"]
+chardet = ["chardet"]
+charset-normalizer = ["charset-normalizer"]
+html5lib = ["html5lib"]
+lxml = ["lxml"]
+
+[[package]]
 name = "black"
 version = "24.4.0"
 description = "The uncompromising code formatter."
@@ -226,6 +261,20 @@ colorama = ["colorama (>=0.4.3)"]
 d = ["aiohttp (>=3.7.4)", "aiohttp (>=3.7.4,!=3.9.0)"]
 jupyter = ["ipython (>=7.8.0)", "tokenize-rt (>=3.2.0)"]
 uvloop = ["uvloop (>=0.15.2)"]
+
+[[package]]
+name = "bs4"
+version = "0.0.2"
+description = "Dummy package for Beautiful Soup (beautifulsoup4)"
+optional = false
+python-versions = "*"
+files = [
+    {file = "bs4-0.0.2-py2.py3-none-any.whl", hash = "sha256:abf8742c0805ef7f662dce4b51cca104cffe52b835238afc169142ab9b3fbccc"},
+    {file = "bs4-0.0.2.tar.gz", hash = "sha256:a48685c58f50fe127722417bae83fe6badf500d54b55f7e39ffe43b798653925"},
+]
+
+[package.dependencies]
+beautifulsoup4 = "*"
 
 [[package]]
 name = "certifi"
@@ -1567,6 +1616,24 @@ pluggy = ">=1.4,<2.0"
 testing = ["argcomplete", "attrs (>=19.2)", "hypothesis (>=3.56)", "mock", "pygments (>=2.7.2)", "requests", "setuptools", "xmlschema"]
 
 [[package]]
+name = "pytest-asyncio"
+version = "0.23.6"
+description = "Pytest support for asyncio"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "pytest-asyncio-0.23.6.tar.gz", hash = "sha256:ffe523a89c1c222598c76856e76852b787504ddb72dd5d9b6617ffa8aa2cde5f"},
+    {file = "pytest_asyncio-0.23.6-py3-none-any.whl", hash = "sha256:68516fdd1018ac57b846c9846b954f0393b26f094764a28c955eabb0536a4e8a"},
+]
+
+[package.dependencies]
+pytest = ">=7.0.0,<9"
+
+[package.extras]
+docs = ["sphinx (>=5.3)", "sphinx-rtd-theme (>=1.0)"]
+testing = ["coverage (>=6.2)", "hypothesis (>=5.7.1)"]
+
+[[package]]
 name = "pytest-cov"
 version = "5.0.0"
 description = "Pytest plugin for measuring coverage."
@@ -1785,6 +1852,25 @@ socks = ["PySocks (>=1.5.6,!=1.5.7)"]
 use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 
 [[package]]
+name = "responses"
+version = "0.25.0"
+description = "A utility library for mocking out the `requests` Python library."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "responses-0.25.0-py3-none-any.whl", hash = "sha256:2f0b9c2b6437db4b528619a77e5d565e4ec2a9532162ac1a131a83529db7be1a"},
+    {file = "responses-0.25.0.tar.gz", hash = "sha256:01ae6a02b4f34e39bffceb0fc6786b67a25eae919c6368d05eabc8d9576c2a66"},
+]
+
+[package.dependencies]
+pyyaml = "*"
+requests = ">=2.30.0,<3.0"
+urllib3 = ">=1.25.10,<3.0"
+
+[package.extras]
+tests = ["coverage (>=6.0.0)", "flake8", "mypy", "pytest (>=7.0.0)", "pytest-asyncio", "pytest-cov", "pytest-httpserver", "tomli", "tomli-w", "types-PyYAML", "types-requests"]
+
+[[package]]
 name = "sniffio"
 version = "1.3.1"
 description = "Sniff out which async library your code is running under"
@@ -1793,6 +1879,17 @@ python-versions = ">=3.7"
 files = [
     {file = "sniffio-1.3.1-py3-none-any.whl", hash = "sha256:2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2"},
     {file = "sniffio-1.3.1.tar.gz", hash = "sha256:f4324edc670a0f49750a81b895f35c3adb843cca46f0530f79fc1babb23789dc"},
+]
+
+[[package]]
+name = "soupsieve"
+version = "2.5"
+description = "A modern CSS selector implementation for Beautiful Soup."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "soupsieve-2.5-py3-none-any.whl", hash = "sha256:eaa337ff55a1579b6549dc679565eac1e3d000563bcb1c8ab0d0fefbc0c2cdc7"},
+    {file = "soupsieve-2.5.tar.gz", hash = "sha256:5663d5a7b3bfaeee0bc4372e7fc48f9cff4940b3eec54a6451cc5299f1097690"},
 ]
 
 [[package]]
@@ -2245,4 +2342,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "27ddf041533b5e3f486d39a5b7b17f6fc23e07eb7d04c20d5c44b5abcc802081"
+content-hash = "c227ae919725a72c7aed3f2049de6428548e03034ca173e1632835a835a9fdfc"

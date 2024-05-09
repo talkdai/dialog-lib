@@ -2,8 +2,10 @@ import os
 import pytest
 import sqlalchemy
 
+from aioresponses import aioresponses
 from sqlalchemy.orm import Session
 from dialog_lib.db.models import Base
+
 
 @pytest.fixture
 def db_engine():
@@ -16,3 +18,8 @@ def db_session(db_engine):
     yield session
     session.rollback()
     session.close()
+
+@pytest.fixture
+def mock_aioresponse():
+    with aioresponses() as m:
+        yield m
