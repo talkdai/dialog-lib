@@ -3,7 +3,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from dialog_lib.db.models import CompanyContent
 from sqlalchemy.orm import DeclarativeBase, Session
 
-from langchain.schema.retriever import BaseRetriever, Document
+from langchain_core.retrievers import BaseRetriever
+from langchain_core.documents import Document
 from dialog_lib.embeddings.generate import get_most_relevant_contents_from_message
 
 class DialogRetriever(BaseRetriever):
