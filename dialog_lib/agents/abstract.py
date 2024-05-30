@@ -3,7 +3,8 @@ from langchain.memory import ConversationBufferWindowMemory
 from langchain.chains.llm import LLMChain
 from langchain.memory.chat_memory import BaseChatMemory
 from langchain.chains.conversation.memory import ConversationBufferMemory
-from dialog_lib.db.memory import CustomPostgresChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from dialog_lib.db.memory import CustomPostgresChatMessageHistory, get_memory_instance
 
 
 class AbstractLLM:
@@ -101,6 +102,74 @@ class AbstractLLM:
         Returns the messages from the memory instance
         """
         return self.memory.messages
+
+
+class AbstractLcelClass(AbstractLLM):
+
+
+    @property
+    def chat_model(self):
+        """
+        builds and returns the chat model for the LCEL
+        """
+        raise NotImplementedError("Chat model must be implemented")
+
+    @property
+    def context_dict(self):
+        """
+        builds and returns the context dictionary for the LCEL
+        """
+        raise NotImplementedError("Context dictionary must be implemented")
+
+    @property
+    def chain(self):
+        """
+        builds and returns the chain for the LCEL
+        """
+        return (
+            self.context_dict | self.prompt | self.chat_model
+        )
+
+    @property
+    def get_memory_instance(self):
+        return get_memory_instance(
+            session_id=self.session_id,
+            sqlalchemy_session=self.dbsession,
+            database_url=self.config.get("database_url")
+        )
+
+    @property
+    def runnable(self):
+        RunnableWithMessageHistory(
+            self.chain,
+            self.get_memory_instance,
+            input_messages_key='input',
+            history_messages_key="chat_history"
+        )
+
+    def process(self, input: str):
+        """
+        Function that encapsulates the pre-processing, processing and post-processing
+        of the LLM.
+        """
+        processed_input = self.preprocess(input)
+        self.generate_prompt(processed_input)
+        output = self.runnable.invoke(
+            {
+                "input": processed_input,
+            },
+            {"configurable": {
+                "session_id": self.session_id,
+            }}
+        )
+        processed_output = self.postprocess(output)
+        return processed_output
+
+    def invoke(self, input: dict):
+        """
+        Function that invokes the LLM with the given input.
+        """
+        return self.process(input)
 
 
 class AbstractRAG(AbstractLLM):

@@ -111,3 +111,10 @@ def get_messages(session_id, dbsession=None, database_url=None):
         session_id, dbsession=dbsession, database_url=database_url
     )
     return memory.messages
+
+def get_memory_instance(session_id, sqlalchemy_session, database_url):
+    return generate_memory_instance(
+        session_id=session_id,
+        dbsession=sqlalchemy_session,
+        database_url=database_url
+    )
