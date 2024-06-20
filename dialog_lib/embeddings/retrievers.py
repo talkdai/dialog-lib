@@ -29,9 +29,10 @@ class DialogRetriever(BaseRetriever):
         )
         return [
             Document(
-                page_content=f"{content.question}\n\n{content.content}",
+                page_content=content.content,
                 metadata={
-                    "title": content.question,
+                    "question": content.question,
+                    "title": content.question, # compatibility
                     "category": content.category,
                     "subcategory": content.subcategory,
                     "dataset": content.dataset,
