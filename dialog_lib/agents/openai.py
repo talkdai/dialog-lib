@@ -1,5 +1,7 @@
-from .abstract import AbstractDialog
+from .abstract import AbstractDialog, AbstractLCELDialog
+from langchain_openai import OpenAIEmbeddings
 from langchain_openai.chat_models.base import ChatOpenAI
+from dialog_lib.embeddings.retrievers import DialogRetriever
 
 
 class DialogOpenAI(AbstractDialog):
@@ -15,3 +17,15 @@ class DialogOpenAI(AbstractDialog):
 
     def postprocess(self, output):
         return output.get("text")
+
+
+class DialogLCELOpenAI(AbstractLCELDialog):
+    def __init__(self, *args, **kwargs):
+        self.openai_api_key = kwargs.get("llm_api_key") or os.environ.get("OPENAI_API_KEY")
+        kwargs["model_class"] = ChatOpenAI(
+            model=kwargs.pop("model"),
+            temperature=kwargs.pop("temperature"),
+            openai_api_key=self.openai_api_key,
+        )
+        kwargs["embedding_llm"] = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
+        super().__init__(*args, **kwargs)

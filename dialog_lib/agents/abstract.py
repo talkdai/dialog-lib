@@ -1,10 +1,18 @@
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+import warnings
+from operator import itemgetter
+
+from langchain.schema import format_document
 from langchain.memory import ConversationBufferWindowMemory
+from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.chains.llm import LLMChain
+from langchain.prompts.prompt import PromptTemplate
 from langchain.memory.chat_memory import BaseChatMemory
-from langchain.chains.conversation.memory import ConversationBufferMemory
+from langchain_core.runnables import RunnablePassthrough
 from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain.chains.conversation.memory import ConversationBufferMemory
+
 from dialog_lib.db.memory import CustomPostgresChatMessageHistory, get_memory_instance
+from dialog_lib.embeddings.retrievers import DialogRetriever
 
 
 class AbstractLLM:
@@ -104,22 +112,49 @@ class AbstractLLM:
         return self.memory.messages
 
 
-class AbstractLcelClass(AbstractLLM):
-
+class AbstractLCEL(AbstractLLM):
 
     @property
-    def chat_model(self):
+    def document_prompt(self):
+        return PromptTemplate.from_template(template="{page_content}")
+
+    @property
+    def model(self):
         """
         builds and returns the chat model for the LCEL
         """
         raise NotImplementedError("Chat model must be implemented")
 
     @property
+    def retriever(self):
+        """
+        builds and returns the retriever for the LCEL
+        """
+        raise NotImplementedError("Retriever must be implemented")
+
+    def documents_formatter(self, docs, document_separator="\n\n"):
+        """
+        This is the default combine_documents function that returns the documents as is.
+        We use the default format_documents function from Langchain.
+        """
+        doc_strings = [format_document(doc, self.document_prompt) for doc in docs]
+        return document_separator.join(doc_strings)
+
+    @property
     def context_dict(self):
         """
         builds and returns the context dictionary for the LCEL
         """
-        raise NotImplementedError("Context dictionary must be implemented")
+
+        context_dict = {
+            "input": RunnablePassthrough(),
+            "chat_history": itemgetter("chat_history"),
+        }
+
+        if self.retriever:
+            context_dict["context"] = itemgetter("input") | self.retriever | self.documents_formatter
+
+        return context_dict
 
     @property
     def chain(self):
@@ -127,22 +162,31 @@ class AbstractLcelClass(AbstractLLM):
         builds and returns the chain for the LCEL
         """
         return (
-            self.context_dict | self.prompt | self.chat_model
+            self.context_dict | self.prompt | self.model
         )
 
     @property
-    def get_memory_instance(self):
+    def memory(self):
         return get_memory_instance(
             session_id=self.session_id,
             sqlalchemy_session=self.dbsession,
             database_url=self.config.get("database_url")
         )
 
+    def get_session_history(self, something):
+        return CustomPostgresChatMessageHistory(
+            connection_string=self.config.get("database_url"),
+            session_id=self.session_id,
+            parent_session_id=self.parent_session_id,
+            table_name="chat_messages",
+            dbsession=self.dbsession,
+        )
+
     @property
     def runnable(self):
-        RunnableWithMessageHistory(
+        return RunnableWithMessageHistory(
             self.chain,
-            self.get_memory_instance,
+            self.get_session_history,
             input_messages_key='input',
             history_messages_key="chat_history"
         )
@@ -201,6 +245,13 @@ class AbstractRAG(AbstractLLM):
 
 class AbstractDialog(AbstractLLM):
     def __init__(self, *args, **kwargs):
+        warnings.filterwarnings("default", category=DeprecationWarning)
+        warnings.warn(
+            (
+                "AbstractDialog will be deprecated in release 0.2 due to the creation of Langchain's LCEL. ",
+                "Please use AbstractLCELDialog instead."
+            ), DeprecationWarning, stacklevel=3
+        )
         kwargs["config"] = kwargs.get("config", {})
 
         self.memory_instance = kwargs.pop("memory", None)
@@ -245,3 +296,40 @@ class AbstractDialog(AbstractLLM):
         return LLMChain(
             **chain_settings
         )
+
+
+class AbstractLCELDialog(AbstractLCEL):
+    def __init__(self, *args, **kwargs):
+        kwargs["config"] = kwargs.get("config", {})
+
+        self.memory_instance = kwargs.pop("memory", None)
+        self.llm_api_key = kwargs
+        self.prompt_content = kwargs.pop("prompt", None)
+        self.chat_model = kwargs.pop("model_class")
+        self.embedding_llm = kwargs.pop("embedding_llm")
+        super().__init__(*args, **kwargs)
+
+    @property
+    def retriever(self):
+        return DialogRetriever(
+            session=self.dbsession,
+            embedding_llm=self.embedding_llm,
+        )
+
+    @property
+    def model(self):
+        return self.chat_model
+
+    def generate_prompt(self, input_text):
+        self.prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", "What can I help you with today?"),
+                MessagesPlaceholder(variable_name="chat_history"),
+                ("system", "Here is some context for the user request: {context}"),
+                ("human", "{input}"),
+            ]
+        )
+        return input_text
+
+    def postprocess(self, output):
+        return output.content

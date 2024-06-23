@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dialog-lib"
-version = "0.0.1.19"
+version = "0.0.1.20"
 description = ""
 authors = ["Talkd.AI <foss@talkd.ai>"]
 license = "MIT"
@@ -14,7 +14,7 @@ click = "^8.1.7"
 pgvector = "^0.2.5"
 langchain-openai = "^0.1.8"
 psycopg2-binary = "^2.9.9"
-langchain-postgres = "^0.0.7"
+langchain-postgres = "0.0.7"
 langchain-community = "^0.2.5"
 langchain-anthropic = "^0.1.11"
 bs4 = "^0.0.2"
