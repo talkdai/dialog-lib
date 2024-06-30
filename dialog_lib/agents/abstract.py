@@ -6,8 +6,9 @@ from langchain.memory import ConversationBufferWindowMemory
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.chains.llm import LLMChain
 from langchain.prompts.prompt import PromptTemplate
+from langchain.prompts.chat import ChatPromptTemplate
 from langchain.memory.chat_memory import BaseChatMemory
-from langchain_core.runnables import RunnablePassthrough
+from langchain_core.runnables import RunnablePassthrough, RunnableParallel, RunnableLambda
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain.chains.conversation.memory import ConversationBufferMemory
 
@@ -141,29 +142,57 @@ class AbstractLCEL(AbstractLLM):
         return document_separator.join(doc_strings)
 
     @property
-    def context_dict(self):
+    def retriever_chain(self):
         """
-        builds and returns the context dictionary for the LCEL
-        """
-
-        context_dict = {
-            "input": RunnablePassthrough(),
-            "chat_history": itemgetter("chat_history"),
-        }
-
-        if self.retriever:
-            context_dict["context"] = itemgetter("input") | self.retriever | self.documents_formatter
-
-        return context_dict
-
-    @property
-    def chain(self):
-        """
-        builds and returns the chain for the LCEL
+        builds and returns the retriever chain for the LCEL
         """
         return (
-            self.context_dict | self.prompt | self.model
+            itemgetter("input") | self.retriever
+        ).with_config({"run_name": "RetrieverChain"})
+
+    @property
+    def fallback_chain(self):
+        """
+        builds and returns the fallback message chain for the LCEL
+        """
+        fallback_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("ai", self.config.get("prompt").get("fallback_not_found_relevant_contents"))
+            ]
         )
+
+        def parse_fallback(ai_message):
+            return ai_message.content
+
+        return (
+            fallback_prompt | RunnableLambda(lambda x: x.messages[-1])
+        )
+
+    @property
+    def answer_chain(self):
+        """
+        builds and returns the answer chain for the LCEL
+        """
+        return (
+            RunnableParallel(
+                {
+                    "context": itemgetter("relevant_contents") | RunnableLambda(self.documents_formatter),
+                    "input": itemgetter("input"),
+                    "chat_history": itemgetter("chat_history"),
+                }
+            ).with_config({"run_name": "GetContext"})
+            | self.prompt
+            | self.model
+        ).with_config({"run_name": "AnswerChain"})
+
+    @property
+    def answer_runnable(self):
+        return RunnableWithMessageHistory(
+            self.answer_chain,
+            self.get_session_history,
+            input_messages_key='input',
+            history_messages_key="chat_history"
+        ).with_config({"run_name": "AnswerRunnableWithHistory"})
 
     @property
     def memory(self):
@@ -182,13 +211,22 @@ class AbstractLCEL(AbstractLLM):
             dbsession=self.dbsession,
         )
 
+    def chain_router(self, input):
+        return self.answer_runnable if len(input["relevant_contents"]) > 0 else self.fallback_chain
+
     @property
-    def runnable(self):
-        return RunnableWithMessageHistory(
-            self.chain,
-            self.get_session_history,
-            input_messages_key='input',
-            history_messages_key="chat_history"
+    def main_chain(self):
+        return (
+            (
+                RunnableParallel(
+                    {
+                        "relevant_contents": self.retriever_chain,
+                        "input": itemgetter("input")
+                    }
+                ).with_config({"run_name": "GetRelevantContext"}) | RunnableLambda(self.chain_router).with_config(
+                    {"run_name": "ChainRouter"}
+                )
+            )
         )
 
     def process(self, input: str):
@@ -198,7 +236,7 @@ class AbstractLCEL(AbstractLLM):
         """
         processed_input = self.preprocess(input)
         self.generate_prompt(processed_input)
-        output = self.runnable.invoke(
+        output = self.main_chain.invoke(
             {
                 "input": processed_input,
             },
@@ -314,6 +352,8 @@ class AbstractLCELDialog(AbstractLCEL):
         return DialogRetriever(
             session=self.dbsession,
             embedding_llm=self.embedding_llm,
+            threshold=0.3,
+            top_k=3
         )
 
     @property
