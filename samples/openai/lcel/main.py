@@ -22,6 +22,9 @@ agent = DialogLCELOpenAI(
     dbsession=dbsession,
     config={
         "database_url": database_url,
+        "prompt": {
+            "fallback_not_found_relevant_contents": "I'm sorry, I don't have an answer for that. Can I help you with something else?",
+        }
     },
     session_id=str(uuid4())
 )

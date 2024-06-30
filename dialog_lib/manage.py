@@ -1,12 +1,22 @@
-import click
 import os
+import click
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+from dialog_lib.loaders.csv import load_csv as csv_loader
 from dialog_lib.agents import DialogOpenAI, DialogAnthropic
 from dialog_lib.memory import generate_local_memory_instance
+
+from langchain_openai import OpenAIEmbeddings
 
 @click.group()
 def cli():
     pass
 
+def get_llm_key(env=None):
+    if env is not None:
+        return os.environ.get(env)
+
+    return os.environ.get("OPENAI_API_KEY") or os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("LLM_API_KEY")
 
 def run_llm(agent, instance_name, memory, debug=False):
     click.echo("## Welcome to talkd.ai/dialog-lib CLI")
@@ -24,12 +34,10 @@ def run_llm(agent, instance_name, memory, debug=False):
     if debug:
         click.echo(memory.chat_memory.messages)
 
-
-
 @cli.command()
 @click.option("--model", default="gpt-3.5-turbo", help="The model to use")
 @click.option("--temperature", default=0.1, help="The temperature for generating responses")
-@click.option("--llm-api-key", default=os.environ.get("OPENAI_API_KEY"), help="The OpenAI API key")
+@click.option("--llm-api-key", default=get_llm_key(), help="The OpenAI API key")
 @click.option("--prompt", default="You are a bot called Sara. Be nice to other human beings.", help="The prompt for the dialog")
 @click.option("--debug", default=False, help="Prints the memory after the dialog ends", is_flag=True)
 def openai(model, temperature, llm_api_key, prompt, debug):
@@ -47,7 +55,7 @@ def openai(model, temperature, llm_api_key, prompt, debug):
 @cli.command()
 @click.option("--model", default="claude-3-opus-20240229", help="The model to use")
 @click.option("--temperature", default=0, help="The temperature for generating responses")
-@click.option("--llm-api-key", default=os.environ.get("ANTHROPIC_API_KEY", None), help="The Anthropic API key", required=True)
+@click.option("--llm-api-key", default=get_llm_key(), help="The Anthropic API key", required=True)
 @click.option("--prompt", default="You are a bot called Sara. Be nice to other human beings.", help="The prompt for the dialog")
 @click.option("--debug", default=False, help="Prints the memory after the dialog ends", is_flag=True)
 def anthropic(model, temperature, llm_api_key, prompt, debug):
@@ -60,6 +68,24 @@ def anthropic(model, temperature, llm_api_key, prompt, debug):
         memory=memory,
     )
     run_llm(dialog, "Anthropic", memory, debug=debug)
+
+
+
+@cli.command()
+@click.option("--database-url", default=os.environ.get("DATABASE_URL"), help="The postgres database URL")
+@click.option("--llm-api-key", default=get_llm_key(), help="The LLM API key", required=True)
+@click.option("--file", help="The CSV file to load the data from", required=True)
+def load_csv(database_url, llm_api_key, file):
+    breakpoint()
+    engine = create_engine(database_url)
+    dbsession = Session(engine.connect())
+    csv_loader(
+        file_path=file,
+        dbsession=dbsession,
+        embedding_llm_model="openai",
+        embedding_llm_api_key=llm_api_key
+    )
+    click.echo("## Loaded the CSV file to the database")
 
 
 def main():

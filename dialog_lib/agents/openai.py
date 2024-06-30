@@ -1,3 +1,4 @@
+import os
 from .abstract import AbstractDialog, AbstractLCELDialog
 from langchain_openai import OpenAIEmbeddings
 from langchain_openai.chat_models.base import ChatOpenAI

@@ -1,0 +1,11 @@
+category,subcategory,question,content
+faq,football,"Whats your favorite soccer team","My favorite soccer team is Palmeiras, from Brazil."
+faq,football,"Whats your favorite soccer player","My favorite soccer player is Neymar, from Brazil."
+faq,faq,"How are you?","I'm doing great"
+faq,faq,"Whats your name?","My name is Roberta"
+faq,faq,"Qual seu nome?","Meu nome é Roberta"
+faq,faq,"What is Marimo?","Marimo is a great alternative to Jupyter notebook"
+faq,faq,"What is Webcheck?","WebCheck is an X-Ray vision for security informations on your system"
+faq,faq,"What is LLMWare?","LLMWare is a framework for building SLM-based applications"
+faq,faq,"What is HackingBuddyGPT?","HackingBuddyGPT helps security researchers use LLMs to discover new attack vectors and save the world"
+faq,faq,"What is Giskard?","Giskard is a Python library for data scientists to get started with testing AI models in their"
