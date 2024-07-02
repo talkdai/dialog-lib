@@ -1,9 +1,19 @@
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+import warnings
+from operator import itemgetter
+
+from langchain.schema import format_document
 from langchain.memory import ConversationBufferWindowMemory
+from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.chains.llm import LLMChain
+from langchain.prompts.prompt import PromptTemplate
+from langchain.prompts.chat import ChatPromptTemplate
 from langchain.memory.chat_memory import BaseChatMemory
+from langchain_core.runnables import RunnablePassthrough, RunnableParallel, RunnableLambda
+from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain.chains.conversation.memory import ConversationBufferMemory
-from dialog_lib.db.memory import CustomPostgresChatMessageHistory
+
+from dialog_lib.db.memory import CustomPostgresChatMessageHistory, get_memory_instance
+from dialog_lib.embeddings.retrievers import DialogRetriever
 
 
 class AbstractLLM:
@@ -103,6 +113,166 @@ class AbstractLLM:
         return self.memory.messages
 
 
+class AbstractLCEL(AbstractLLM):
+    def __init__(self, *args, **kwargs):
+        kwargs["config"] = kwargs.get("config", {})
+        self.memory_instance = kwargs.pop("memory", None)
+        self.llm_api_key = kwargs
+        self.prompt_content = kwargs.pop("prompt", None)
+        self.chat_model = kwargs.pop("model_class")
+        self.embedding_llm = kwargs.pop("embedding_llm")
+        self.cosine_similarity_threshold = kwargs.pop("cosine_similarity_threshold", 0.3)
+        self.top_k = kwargs.pop("top_k", 3)
+        super().__init__(*args, **kwargs)
+
+    @property
+    def document_prompt(self):
+        return PromptTemplate.from_template(template="{page_content}")
+
+    @property
+    def retriever(self):
+        return DialogRetriever(
+            session=self.dbsession,
+            embedding_llm=self.embedding_llm,
+            threshold=self.cosine_similarity_threshold,
+            top_k=self.top_k
+        )
+
+    @property
+    def model(self):
+        return self.chat_model
+
+    def combine_docs(self, docs, document_separator="\n\n"):
+        """
+        This is the default combine_documents function that returns the documents as is.
+        We use the default combine_docs function from Langchain.
+        """
+        doc_strings = [format_document(doc, self.document_prompt) for doc in docs]
+        return document_separator.join(doc_strings)
+
+    @property
+    def retriever_chain(self):
+        """
+        builds and returns the retriever chain for the LCEL
+        """
+        return (
+            itemgetter("input") | self.retriever
+        ).with_config({"run_name": "RetrieverChain"})
+
+    @property
+    def fallback_chain(self):
+        """
+        builds and returns the fallback message chain for the LCEL
+        """
+        fallback_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("ai", self.config.get("prompt").get("fallback_not_found_relevant_contents"))
+            ]
+        )
+
+        return (
+            fallback_prompt | RunnableLambda(lambda x: x.messages[-1])
+        )
+
+    @property
+    def answer_chain(self):
+        """
+        builds and returns the answer chain for the LCEL
+        """
+        return (
+            RunnableParallel(
+                {
+                    "context": itemgetter("relevant_contents") | RunnableLambda(self.combine_docs),
+                    "input": itemgetter("input"),
+                    "chat_history": itemgetter("chat_history"),
+                }
+            ).with_config({"run_name": "GetContext"})
+            | self.prompt
+            | self.model
+        ).with_config({"run_name": "AnswerChain"})
+
+    @property
+    def answer_runnable(self):
+        return RunnableWithMessageHistory(
+            self.answer_chain,
+            self.get_session_history,
+            input_messages_key='input',
+            history_messages_key="chat_history"
+        ).with_config({"run_name": "AnswerRunnableWithHistory"})
+
+    @property
+    def memory(self):
+        return get_memory_instance(
+            session_id=self.session_id,
+            sqlalchemy_session=self.dbsession,
+            database_url=self.config.get("database_url")
+        )
+
+    def get_session_history(self, something):
+        return CustomPostgresChatMessageHistory(
+            connection_string=self.config.get("database_url"),
+            session_id=self.session_id,
+            parent_session_id=self.parent_session_id,
+            table_name="chat_messages",
+            dbsession=self.dbsession,
+        )
+
+    def chain_router(self, input):
+        return self.answer_runnable if len(input["relevant_contents"]) > 0 else self.fallback_chain
+
+    @property
+    def main_chain(self):
+        return (
+            (
+                RunnableParallel(
+                    {
+                        "relevant_contents": self.retriever_chain,
+                        "input": itemgetter("input")
+                    }
+                ).with_config({"run_name": "GetRelevantContext"}) | RunnableLambda(self.chain_router).with_config(
+                    {"run_name": "ChainRouter"}
+                )
+            )
+        )
+
+    def process(self, input: str):
+        """
+        Function that encapsulates the pre-processing, processing and post-processing
+        of the LLM.
+        """
+        processed_input = self.preprocess(input)
+        self.generate_prompt(processed_input)
+        output = self.main_chain.invoke(
+            {
+                "input": processed_input,
+            },
+            {"configurable": {
+                "session_id": self.session_id,
+            }}
+        )
+        processed_output = self.postprocess(output)
+        return processed_output
+
+    def invoke(self, input: dict):
+        """
+        Function that invokes the LLM with the given input.
+        """
+        return self.process(input)
+
+    def generate_prompt(self, input_text):
+        self.prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", "What can I help you with today?"),
+                MessagesPlaceholder(variable_name="chat_history"),
+                ("system", "Here is some context for the user request: {context}"),
+                ("human", input_text),
+            ]
+        )
+
+    def postprocess(self, output):
+        return output.content
+
+
 class AbstractRAG(AbstractLLM):
     relevant_contents = []
 
@@ -132,6 +302,13 @@ class AbstractRAG(AbstractLLM):
 
 class AbstractDialog(AbstractLLM):
     def __init__(self, *args, **kwargs):
+        warnings.filterwarnings("default", category=DeprecationWarning)
+        warnings.warn(
+            (
+                "AbstractDialog will be deprecated in release 0.2 due to the creation of Langchain's LCEL. ",
+                "Please use AbstractLCEL instead."
+            ), DeprecationWarning, stacklevel=3
+        )
         kwargs["config"] = kwargs.get("config", {})
 
         self.memory_instance = kwargs.pop("memory", None)
@@ -176,3 +353,4 @@ class AbstractDialog(AbstractLLM):
         return LLMChain(
             **chain_settings
         )
+
