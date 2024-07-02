@@ -114,29 +114,38 @@ class AbstractLLM:
 
 
 class AbstractLCEL(AbstractLLM):
+    def __init__(self, *args, **kwargs):
+        kwargs["config"] = kwargs.get("config", {})
+        self.memory_instance = kwargs.pop("memory", None)
+        self.llm_api_key = kwargs
+        self.prompt_content = kwargs.pop("prompt", None)
+        self.chat_model = kwargs.pop("model_class")
+        self.embedding_llm = kwargs.pop("embedding_llm")
+        self.cosine_similarity_threshold = kwargs.pop("cosine_similarity_threshold", 0.3)
+        self.top_k = kwargs.pop("top_k", 3)
+        super().__init__(*args, **kwargs)
 
     @property
     def document_prompt(self):
         return PromptTemplate.from_template(template="{page_content}")
 
     @property
-    def model(self):
-        """
-        builds and returns the chat model for the LCEL
-        """
-        raise NotImplementedError("Chat model must be implemented")
+    def retriever(self):
+        return DialogRetriever(
+            session=self.dbsession,
+            embedding_llm=self.embedding_llm,
+            threshold=self.cosine_similarity_threshold,
+            top_k=self.top_k
+        )
 
     @property
-    def retriever(self):
-        """
-        builds and returns the retriever for the LCEL
-        """
-        raise NotImplementedError("Retriever must be implemented")
+    def model(self):
+        return self.chat_model
 
-    def documents_formatter(self, docs, document_separator="\n\n"):
+    def combine_docs(self, docs, document_separator="\n\n"):
         """
         This is the default combine_documents function that returns the documents as is.
-        We use the default format_documents function from Langchain.
+        We use the default combine_docs function from Langchain.
         """
         doc_strings = [format_document(doc, self.document_prompt) for doc in docs]
         return document_separator.join(doc_strings)
@@ -161,9 +170,6 @@ class AbstractLCEL(AbstractLLM):
             ]
         )
 
-        def parse_fallback(ai_message):
-            return ai_message.content
-
         return (
             fallback_prompt | RunnableLambda(lambda x: x.messages[-1])
         )
@@ -176,7 +182,7 @@ class AbstractLCEL(AbstractLLM):
         return (
             RunnableParallel(
                 {
-                    "context": itemgetter("relevant_contents") | RunnableLambda(self.documents_formatter),
+                    "context": itemgetter("relevant_contents") | RunnableLambda(self.combine_docs),
                     "input": itemgetter("input"),
                     "chat_history": itemgetter("chat_history"),
                 }
@@ -253,6 +259,19 @@ class AbstractLCEL(AbstractLLM):
         """
         return self.process(input)
 
+    def generate_prompt(self, input_text):
+        self.prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", "What can I help you with today?"),
+                MessagesPlaceholder(variable_name="chat_history"),
+                ("system", "Here is some context for the user request: {context}"),
+                ("human", input_text),
+            ]
+        )
+
+    def postprocess(self, output):
+        return output.content
+
 
 class AbstractRAG(AbstractLLM):
     relevant_contents = []
@@ -287,7 +306,7 @@ class AbstractDialog(AbstractLLM):
         warnings.warn(
             (
                 "AbstractDialog will be deprecated in release 0.2 due to the creation of Langchain's LCEL. ",
-                "Please use AbstractLCELDialog instead."
+                "Please use AbstractLCEL instead."
             ), DeprecationWarning, stacklevel=3
         )
         kwargs["config"] = kwargs.get("config", {})
@@ -335,41 +354,3 @@ class AbstractDialog(AbstractLLM):
             **chain_settings
         )
 
-
-class AbstractLCELDialog(AbstractLCEL):
-    def __init__(self, *args, **kwargs):
-        kwargs["config"] = kwargs.get("config", {})
-
-        self.memory_instance = kwargs.pop("memory", None)
-        self.llm_api_key = kwargs
-        self.prompt_content = kwargs.pop("prompt", None)
-        self.chat_model = kwargs.pop("model_class")
-        self.embedding_llm = kwargs.pop("embedding_llm")
-        super().__init__(*args, **kwargs)
-
-    @property
-    def retriever(self):
-        return DialogRetriever(
-            session=self.dbsession,
-            embedding_llm=self.embedding_llm,
-            threshold=0.3,
-            top_k=3
-        )
-
-    @property
-    def model(self):
-        return self.chat_model
-
-    def generate_prompt(self, input_text):
-        self.prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", "What can I help you with today?"),
-                MessagesPlaceholder(variable_name="chat_history"),
-                ("system", "Here is some context for the user request: {context}"),
-                ("human", "{input}"),
-            ]
-        )
-        return input_text
-
-    def postprocess(self, output):
-        return output.content
