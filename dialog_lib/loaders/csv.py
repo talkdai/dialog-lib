@@ -1,3 +1,4 @@
+from dialog_lib.db import get_session
 from dialog_lib.db.models import CompanyContent
 from dialog_lib.embeddings.generate import generate_embedding
 
@@ -6,9 +7,10 @@ from langchain_community.document_loaders.csv_loader import CSVLoader
 
 
 def load_csv(
-        file_path, dbsession, embeddings_model_instance=None,
+        file_path, dbsession=get_session(), embeddings_model_instance=None,
         embedding_llm_model=None, embedding_llm_api_key=None, company_id=None
     ):
+
     loader = CSVLoader(file_path=file_path)
     contents = loader.load()
 

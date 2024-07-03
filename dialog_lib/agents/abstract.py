@@ -12,6 +12,7 @@ from langchain_core.runnables import RunnablePassthrough, RunnableParallel, Runn
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain.chains.conversation.memory import ConversationBufferMemory
 
+from dialog_lib.db import get_session
 from dialog_lib.db.memory import CustomPostgresChatMessageHistory, get_memory_instance
 from dialog_lib.embeddings.retrievers import DialogRetriever
 
@@ -24,7 +25,7 @@ class AbstractLLM:
         parent_session_id=None,
         dataset=None,
         llm_api_key=None,
-        dbsession=None,
+        dbsession=get_session(),
     ):
         """
         :param config: Configuration dictionary

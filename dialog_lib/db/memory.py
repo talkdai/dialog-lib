@@ -1,5 +1,5 @@
 import psycopg
-
+from .session import get_session
 from langchain_postgres import PostgresChatMessageHistory
 from langchain.schema.messages import BaseMessage, _message_to_dict
 
@@ -15,7 +15,7 @@ class CustomPostgresChatMessageHistory(PostgresChatMessageHistory):
         self,
         *args,
         parent_session_id=None,
-        dbsession=None,
+        dbsession=get_session(),
         chats_model=Chat,
         chat_messages_model=ChatMessages,
         ssl_mode=None,
@@ -67,7 +67,7 @@ class CustomPostgresChatMessageHistory(PostgresChatMessageHistory):
 def generate_memory_instance(
     session_id,
     parent_session_id=None,
-    dbsession=None,
+    dbsession=get_session(),
     database_url=None,
     chats_model=Chat,
     chat_messages_model=ChatMessages,
@@ -88,7 +88,7 @@ def generate_memory_instance(
 
 
 def add_user_message_to_message_history(
-    session_id, message, memory=None, dbsession=None, database_url=None
+    session_id, message, memory=None, dbsession=get_session(), database_url=None
 ):
     """
     Add a user message to the message history and returns the updated
@@ -103,7 +103,7 @@ def add_user_message_to_message_history(
     return memory
 
 
-def get_messages(session_id, dbsession=None, database_url=None):
+def get_messages(session_id, dbsession=get_session(), database_url=None):
     """
     Get all messages for a given session_id
     """
