@@ -76,7 +76,6 @@ def anthropic(model, temperature, llm_api_key, prompt, debug):
 @click.option("--llm-api-key", default=get_llm_key(), help="The LLM API key", required=True)
 @click.option("--file", help="The CSV file to load the data from", required=True)
 def load_csv(database_url, llm_api_key, file):
-    breakpoint()
     engine = create_engine(database_url)
     dbsession = Session(engine.connect())
     csv_loader(
@@ -86,6 +85,7 @@ def load_csv(database_url, llm_api_key, file):
         embedding_llm_api_key=llm_api_key
     )
     click.echo("## Loaded the CSV file to the database")
+    dbsession.close()
 
 
 def main():

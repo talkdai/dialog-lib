@@ -1,10 +1,10 @@
 from dialog_lib.db.models import CompanyContent
 from dialog_lib.embeddings.generate import generate_embedding
-
+from dialog_lib.db import get_session
 from langchain_community.document_loaders import WebBaseLoader
 
 
-def load_webpage(url, dbsession, embeddings_model_instance, company_id=None):
+def load_webpage(url, embeddings_model_instance, dbsession=get_session(), company_id=None):
     loader = WebBaseLoader(url)
     contents = loader.load()
 

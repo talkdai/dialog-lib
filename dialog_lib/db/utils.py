@@ -1,9 +1,9 @@
 import uuid
-
+from .session import get_session
 from .models import Chat
 
 
-def create_chat_session(identifier=None, dbsession=None, model=Chat):
+def create_chat_session(identifier=None, dbsession=get_session(), model=Chat):
     if identifier is None:
         identifier = uuid.uuid4().hex
 

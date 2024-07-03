@@ -9,7 +9,7 @@ def test_load_web_content(mock_aioresponse, db_session, mocker):
     mocker.patch('dialog_lib.loaders.web.generate_embedding', return_value=[0] * 1536)
     mock_aioresponse.get('http://example.com', body='Hello, world!')
 
-    content = load_webpage('http://example.com', db_session, None, 1)
+    content = load_webpage('http://example.com', None, db_session, 1)
     assert content.question == "Example Domain"
     assert content.embedding == [0] * 1536
 

@@ -20,7 +20,6 @@ def test_abstract_agent_with_valid_config():
     assert agent.dataset is None
     assert agent.llm_api_key is None
     assert agent.parent_session_id is None
-    assert agent.dbsession is None
 
 def test_abstract_agent_get_prompt():
     config = {
