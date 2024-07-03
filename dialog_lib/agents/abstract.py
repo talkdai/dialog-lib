@@ -25,7 +25,7 @@ class AbstractLLM:
         parent_session_id=None,
         dataset=None,
         llm_api_key=None,
-        dbsession=get_session(),
+        dbsession=get_session,
     ):
         """
         :param config: Configuration dictionary
@@ -132,12 +132,13 @@ class AbstractLCEL(AbstractLLM):
 
     @property
     def retriever(self):
-        return DialogRetriever(
-            session=self.dbsession,
-            embedding_llm=self.embedding_llm,
-            threshold=self.cosine_similarity_threshold,
-            top_k=self.top_k
-        )
+        with self.dbsession() as session:
+            return DialogRetriever(
+                session=session,
+                embedding_llm=self.embedding_llm,
+                threshold=self.cosine_similarity_threshold,
+                top_k=self.top_k
+            )
 
     @property
     def model(self):
@@ -203,20 +204,22 @@ class AbstractLCEL(AbstractLLM):
 
     @property
     def memory(self):
-        return get_memory_instance(
-            session_id=self.session_id,
-            sqlalchemy_session=self.dbsession,
-            database_url=self.config.get("database_url")
-        )
+        with self.dbsession() as session:
+            return get_memory_instance(
+                session_id=self.session_id,
+                sqlalchemy_session=session,
+                database_url=self.config.get("database_url")
+            )
 
     def get_session_history(self, something):
-        return CustomPostgresChatMessageHistory(
-            connection_string=self.config.get("database_url"),
-            session_id=self.session_id,
-            parent_session_id=self.parent_session_id,
-            table_name="chat_messages",
-            dbsession=self.dbsession,
-        )
+        with self.dbsession() as session:
+            return CustomPostgresChatMessageHistory(
+                connection_string=self.config.get("database_url"),
+                session_id=self.session_id,
+                parent_session_id=self.parent_session_id,
+                table_name="chat_messages",
+                dbsession=session,
+            )
 
     def chain_router(self, input):
         return self.answer_runnable if len(input["relevant_contents"]) > 0 else self.fallback_chain

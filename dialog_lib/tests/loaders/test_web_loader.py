@@ -9,9 +9,10 @@ def test_load_web_content(mock_aioresponse, db_session, mocker):
     mocker.patch('dialog_lib.loaders.web.generate_embedding', return_value=[0] * 1536)
     mock_aioresponse.get('http://example.com', body='Hello, world!')
 
-    content = load_webpage('http://example.com', None, db_session, 1)
-    assert content.question == "Example Domain"
-    assert content.embedding == [0] * 1536
+    load_webpage('http://example.com', None, db_session, 1)
 
-    content = db_session.query(CompanyContent).all()
-    assert len(content) == 1
+    with db_session() as session:
+        content = session.query(CompanyContent).first()
+        assert content.question == "Example Domain"
+        assert content.embedding.tolist() == [0]*1536
+
