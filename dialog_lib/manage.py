@@ -78,12 +78,13 @@ def anthropic(model, temperature, llm_api_key, prompt, debug):
 def load_csv(database_url, llm_api_key, file):
     engine = create_engine(database_url)
     dbsession = Session(engine.connect())
-    csv_loader(
-        file_path=file,
-        dbsession=dbsession,
-        embedding_llm_model="openai",
-        embedding_llm_api_key=llm_api_key
-    )
+    with Session(engine.connect()) as session:
+        csv_loader(
+            file_path=file,
+            dbsession=session,
+            embedding_llm_model="openai",
+            embedding_llm_api_key=llm_api_key
+        )
     click.echo("## Loaded the CSV file to the database")
 
 
