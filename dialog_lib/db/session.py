@@ -10,13 +10,10 @@ Session = sessionmaker(bind=engine)
 
 @contextmanager
 def get_session():
-    session = Session()
-    try:
-        yield session
-        session.flush()
-        session.commit()
-    except Exception as e:
-        session.rollback()
-        raise e
-    finally:
-        session.close()
+    with Session() as session:
+        try:
+            yield session
+            session.commit()
+        except Exception as exc:
+            session.rollback()
+            raise exc
