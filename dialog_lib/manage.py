@@ -85,7 +85,6 @@ def load_csv(database_url, llm_api_key, file):
         embedding_llm_api_key=llm_api_key
     )
     click.echo("## Loaded the CSV file to the database")
-    dbsession.close()
 
 
 def main():
