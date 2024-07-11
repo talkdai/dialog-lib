@@ -3,6 +3,7 @@ import click
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from dialog_lib.loaders.csv import load_csv as csv_loader
+from dialog_lib.loaders.gsheets import load_google_sheets as gsheets_loader
 from dialog_lib.agents import DialogOpenAI, DialogAnthropic
 from dialog_lib.memory import generate_local_memory_instance
 
@@ -51,7 +52,6 @@ def openai(model, temperature, llm_api_key, prompt, debug):
     )
     run_llm(dialog, "ChatGPT", memory, debug=debug)
 
-
 @cli.command()
 @click.option("--model", default="claude-3-opus-20240229", help="The model to use")
 @click.option("--temperature", default=0, help="The temperature for generating responses")
@@ -69,14 +69,11 @@ def anthropic(model, temperature, llm_api_key, prompt, debug):
     )
     run_llm(dialog, "Anthropic", memory, debug=debug)
 
-
-
 @cli.command()
 @click.option("--database-url", default=os.environ.get("DATABASE_URL"), help="The postgres database URL")
 @click.option("--llm-api-key", default=get_llm_key(), help="The LLM API key", required=True)
 @click.option("--file", help="The CSV file to load the data from", required=True)
 def load_csv(database_url, llm_api_key, file):
-    breakpoint()
     engine = create_engine(database_url)
     dbsession = Session(engine.connect())
     csv_loader(
@@ -87,6 +84,26 @@ def load_csv(database_url, llm_api_key, file):
     )
     click.echo("## Loaded the CSV file to the database")
 
+@cli.command()
+@click.option("--spreadsheet-url", help="The Google Sheets URL", required=True)
+@click.option("--sheet-name", help="The Google Sheets sheet name", required=True)
+@click.option(
+    "--credentials-path",
+    help="The complete path for the Service Account credentials.json file, i.e.: /user/Talkd/Downloads/credentials.json",
+    required=True
+)
+@click.option("--database-url", default=os.environ.get("DATABASE_URL"), help="The postgres database URL")
+@click.option("--llm-api-key", default=get_llm_key(), help="The OpenAI API key")
+def load_google_sheets(spreadsheet_url, sheet_name, credentials_path, database_url, llm_api_key):
+    engine = create_engine(database_url)
+    dbsession = Session(engine.connect())
+    gsheets_loader(
+        credentials_path=credentials_path,
+        spreadsheet_url=spreadsheet_url,
+        sheet_name=sheet_name,
+        dbsession=dbsession,
+        embeddings_model_instance=OpenAIEmbeddings(openai_api_key=llm_api_key)
+    )
 
 def main():
     cli()
