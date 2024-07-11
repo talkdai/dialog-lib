@@ -1,9 +1,13 @@
+import logging
 from dialog_lib.db import get_session
 from dialog_lib.db.models import CompanyContent
 from dialog_lib.embeddings.generate import generate_embedding
 
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.document_loaders.csv_loader import CSVLoader
+
+
+logger = logging.getLogger(__name__)
 
 
 def load_csv(
@@ -28,6 +32,10 @@ def load_csv(
                 values = line.split(": ")
                 content[values[0]] = values[1]
 
+
+        if not dbsession.query(CompanyContent).filter(
+            CompanyContent.question == content["question"], CompanyContent.content == content["content"]
+        ).first():
             company_content = CompanyContent(
                 category="csv",
                 subcategory="csv-content",
@@ -37,5 +45,5 @@ def load_csv(
                 embedding=generate_embedding(csv_content.page_content, embeddings_model_instance)
             )
             session.add(company_content)
-
-    return company_content
+        else:
+            logger.warning(f"Question: {content['question']} already exists in the database. Skipping.")
