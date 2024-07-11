@@ -30,6 +30,7 @@ services:
         condition: service_healthy
     volumes:
       - ./dialog_lib/:/app/dialog_lib/
+      - ./samples/:/app/samples/
     environment:
       POSTGRES_USER: talkdai
       POSTGRES_PASSWORD: talkdai

@@ -21,6 +21,7 @@ bs4 = "^0.0.2"
 responses = "^0.25.0"
 aioresponses = "^0.7.6"
 pytest-asyncio = "^0.23.6"
+gspread = "^6.1.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.1.1"
