@@ -1,5 +1,5 @@
 import psycopg
-
+from .session import get_session
 from langchain_postgres import PostgresChatMessageHistory
 from langchain.schema.messages import BaseMessage, _message_to_dict
 
@@ -15,7 +15,7 @@ class CustomPostgresChatMessageHistory(PostgresChatMessageHistory):
         self,
         *args,
         parent_session_id=None,
-        dbsession=None,
+        dbsession=get_session,
         chats_model=Chat,
         chat_messages_model=ChatMessages,
         ssl_mode=None,
@@ -48,10 +48,10 @@ class CustomPostgresChatMessageHistory(PostgresChatMessageHistory):
 
     def add_tags(self, tags: str) -> None:
         """Add tags for a given session_id/uuid on chats table"""
-        self.dbsession.query(self.chats_model).where(
-            self.chats_model.session_id == self._session_id
-        ).update({getattr(self.chats_model, "tags"): tags})
-        self.dbsession.commit()
+        with self.dbsession() as session:
+            session.query(self.chats_model).where(
+                self.chats_model.session_id == self._session_id
+            ).update({getattr(self.chats_model, "tags"): tags})
 
     def add_message(self, message: BaseMessage) -> None:
         """Append the message to the record in PostgreSQL"""
@@ -61,13 +61,12 @@ class CustomPostgresChatMessageHistory(PostgresChatMessageHistory):
         if self.parent_session_id:
             message.parent = self.parent_session_id
         self.dbsession.add(message)
-        self.dbsession.commit()
 
 
 def generate_memory_instance(
     session_id,
     parent_session_id=None,
-    dbsession=None,
+    dbsession=get_session,
     database_url=None,
     chats_model=Chat,
     chat_messages_model=ChatMessages,
@@ -88,29 +87,31 @@ def generate_memory_instance(
 
 
 def add_user_message_to_message_history(
-    session_id, message, memory=None, dbsession=None, database_url=None
+    session_id, message, memory=None, dbsession=get_session, database_url=None
 ):
     """
     Add a user message to the message history and returns the updated
     memory instance
     """
-    if not memory:
-        memory = generate_memory_instance(
-            session_id, dbsession=dbsession, database_url=database_url
-        )
+    with dbsession() as session:
+        if not memory:
+            memory = generate_memory_instance(
+                session_id, dbsession=session, database_url=database_url
+            )
 
-    memory.add_user_message(message)
-    return memory
+        memory.add_user_message(message)
+        return memory
 
 
-def get_messages(session_id, dbsession=None, database_url=None):
+def get_messages(session_id, dbsession=get_session, database_url=None):
     """
     Get all messages for a given session_id
     """
-    memory = generate_memory_instance(
-        session_id, dbsession=dbsession, database_url=database_url
-    )
-    return memory.messages
+    with dbsession() as session:
+        memory = generate_memory_instance(
+            session_id, dbsession=session, database_url=database_url
+        )
+        return memory.messages
 
 def get_memory_instance(session_id, sqlalchemy_session, database_url):
     return generate_memory_instance(
