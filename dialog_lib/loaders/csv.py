@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def load_csv(
-        file_path, dbsession=get_session, embeddings_model_instance=None,
+        file_path, dbsession=get_session(), embeddings_model_instance=None,
         embedding_llm_model=None, embedding_llm_api_key=None, company_id=None
     ):
 
@@ -24,14 +24,12 @@ def load_csv(
         else:
             raise ValueError("Invalid embeddings model")
 
-    with dbsession() as session:
-        for csv_content in contents:
-            content = {}
+    for csv_content in contents:
+        content = {}
 
-            for line in csv_content.page_content.split("\n"):
-                values = line.split(": ")
-                content[values[0]] = values[1]
-
+        for idx, line in enumerate(csv_content.page_content.split("\n")):
+            values = line.split(": ")
+            content[values[0]] = values[1]
 
         if not dbsession.query(CompanyContent).filter(
             CompanyContent.question == content["question"], CompanyContent.content == content["content"]
@@ -44,6 +42,8 @@ def load_csv(
                 dataset=company_id,
                 embedding=generate_embedding(csv_content.page_content, embeddings_model_instance)
             )
-            session.add(company_content)
+            dbsession.add(company_content)
         else:
             logger.warning(f"Question: {content['question']} already exists in the database. Skipping.")
+
+        dbsession.commit()

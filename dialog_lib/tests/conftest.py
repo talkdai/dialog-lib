@@ -15,7 +15,7 @@ def db_engine():
 
 @pytest.fixture
 def db_session():
-    return get_session
+    return get_session()
 
 
 @pytest.fixture

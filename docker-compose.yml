@@ -3,8 +3,6 @@ services:
   db:
     image: pgvector/pgvector:pg15
     restart: always
-    ports:
-      - '5432:5432'
     volumes:
        - ./etc/db-ext-vector-test.sql:/docker-entrypoint-initdb.d/init.sql
        - postgres_data:/var/lib/postgresql/data/
@@ -22,7 +20,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    # entrypoint: pytest -vvv
+    entrypoint: pytest -vvv
     stdin_open: true
     tty: true
     depends_on:

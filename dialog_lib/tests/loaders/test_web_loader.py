@@ -11,8 +11,7 @@ def test_load_web_content(mock_aioresponse, db_session, mocker):
 
     load_webpage('http://example.com', None, db_session, 1)
 
-    with db_session() as session:
-        content = session.query(CompanyContent).first()
-        assert content.question == "Example Domain"
-        assert content.embedding.tolist() == [0]*1536
+    content = db_session.query(CompanyContent).first()
+    assert content.question == "Example Domain"
+    assert content.embedding.tolist() == [0]*1536
 

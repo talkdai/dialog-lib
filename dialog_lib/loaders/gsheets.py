@@ -2,6 +2,7 @@ import gspread
 import logging
 
 from dialog_lib.db.models import CompanyContent
+from dialog_lib.db.session import get_session
 from dialog_lib.embeddings.generate import generate_embedding
 
 from pathlib import Path
@@ -41,8 +42,8 @@ class GoogleSheetsLoader(BaseLoader):
 
 
 def load_google_sheets(
-        credentials_path, spreadsheet_url, sheet_name,
-        dbsession, embeddings_model_instance=None, embedding_llm_model=None, embedding_llm_api_key=None,
+        credentials_path, spreadsheet_url, sheet_name, dbsession=get_session(),
+        embeddings_model_instance=None, embedding_llm_model=None, embedding_llm_api_key=None,
         company_id=None
     ):
     loader = GoogleSheetsLoader(credentials_path, spreadsheet_url, sheet_name)
