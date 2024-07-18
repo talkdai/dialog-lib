@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dialog-lib"
-version = "0.0.2.5"
+version = "0.0.2.6"
 description = ""
 authors = ["Talkd.AI <foss@talkd.ai>"]
 license = "MIT"
@@ -8,7 +8,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-langchain = "<0.3.0"
+langchain = "^0.2.8"
 SQLAlchemy = "^2.0.29"
 click = "^8.1.7"
 pgvector = "^0.2.5"
