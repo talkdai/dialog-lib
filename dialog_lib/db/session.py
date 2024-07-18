@@ -5,12 +5,15 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from contextlib import contextmanager
 
-engine = sa.create_engine(os.environ.get("DATABASE_URL"))
-Session = sessionmaker(bind=engine)
+from functools import cache
+
+@cache
+def get_engine():
+    return sa.create_engine(os.environ.get("DATABASE_URL"))
 
 @contextmanager
 def session_scope():
-    with Session(bind=engine) as session:
+    with Session(bind=get_engine()) as session:
         try:
             yield session
             session.commit()
