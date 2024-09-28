@@ -19,7 +19,7 @@ COPY poetry.lock pyproject.toml README.md /app/
 COPY pytest.ini /app/dialog_lib/
 
 USER root
-RUN apt update -y && apt upgrade -y && apt install gcc libpq-dev -y
+RUN apt update -y && apt upgrade -y && apt install gcc libpq-dev postgresql-client -y
 RUN pip install -U pip poetry
 
 COPY /etc /app/etc

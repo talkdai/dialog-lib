@@ -20,7 +20,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    entrypoint: pytest -vvv
+    command: pytest -vvv
     stdin_open: true
     tty: true
     depends_on:
