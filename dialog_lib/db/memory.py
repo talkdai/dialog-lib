@@ -107,7 +107,7 @@ class CustomPostgresChatMessageHistory(PostgresChatMessageHistory):
         get_messages_query = self._get_messages_query(self._table_name)
         for query in get_messages_query:
             self.cursor.execute(query)
-        return self.cursor.fetchall()
+        return [row[0] for row in self.cursor.fetchall()]
 
     async def aget_messages(self):
         """
@@ -118,7 +118,7 @@ class CustomPostgresChatMessageHistory(PostgresChatMessageHistory):
         async with async_conn.cursor() as cursor:
             for query in get_messages_query:
                 await cursor.execute(query)
-            return await cursor.fetchall()
+            return [row[0] for row in await cursor.fetchall()]
 
     def add_tags(self, tags: str) -> None:
         """
